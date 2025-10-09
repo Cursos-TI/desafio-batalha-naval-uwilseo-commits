@@ -3,12 +3,19 @@
 // Definição de constantes para o jogo
 #define TAMANHO_TABULEIRO 10  // Tamanho do tabuleiro 10x10
 #define TAMANHO_NAVIO 3       // Cada navio ocupa 3 posições
+#define TAMANHO_HABILIDADE 7  // Tamanho das matrizes de habilidade 7x7
 #define AGUA 0                // Valor representando água
 #define NAVIO 3               // Valor representando parte do navio
+#define HABILIDADE 5          // Valor representando área afetada por habilidade
 
 // Orientações possíveis para os navios
 #define HORIZONTAL 0
 #define VERTICAL 1
+
+// Tipos de habilidades
+#define CONE 0
+#define CRUZ 1
+#define OCTAEDRO 2
 
 /**
  * Função para inicializar o tabuleiro com água (zeros)
@@ -134,6 +141,134 @@ int posicionarNavio(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO],
 }
 
 /**
+ * Função para criar a matriz de habilidade em formato de CONE
+ * O cone tem o ponto de origem no topo e expande para baixo
+ * Parâmetros:
+ *   habilidade: matriz 7x7 que será preenchida
+ */
+void criarHabilidadeCone(int habilidade[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE]) {
+    int i, j;
+    int centro = TAMANHO_HABILIDADE / 2;  // Centro da matriz (índice 3)
+    
+    // Inicializa toda a matriz com 0
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            habilidade[i][j] = 0;
+        }
+    }
+    
+    // Cria o formato de cone usando condicionais
+    // A cada linha, a largura aumenta em relação ao centro
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            // Calcula a distância do centro na horizontal
+            int distancia = (j > centro) ? (j - centro) : (centro - j);
+            
+            // Se a distância horizontal for menor ou igual à linha atual, marca como afetado
+            if (distancia <= i) {
+                habilidade[i][j] = 1;
+            }
+        }
+    }
+}
+
+/**
+ * Função para criar a matriz de habilidade em formato de CRUZ
+ * A cruz tem o ponto de origem no centro
+ * Parâmetros:
+ *   habilidade: matriz 7x7 que será preenchida
+ */
+void criarHabilidadeCruz(int habilidade[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE]) {
+    int i, j;
+    int centro = TAMANHO_HABILIDADE / 2;  // Centro da matriz (índice 3)
+    
+    // Inicializa toda a matriz com 0
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            habilidade[i][j] = 0;
+        }
+    }
+    
+    // Cria o formato de cruz usando condicionais
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            // Marca as posições na linha central ou coluna central
+            if (i == centro || j == centro) {
+                habilidade[i][j] = 1;
+            }
+        }
+    }
+}
+
+/**
+ * Função para criar a matriz de habilidade em formato de OCTAEDRO (losango)
+ * O octaedro visto de frente forma um losango com centro no meio da matriz
+ * Parâmetros:
+ *   habilidade: matriz 7x7 que será preenchida
+ */
+void criarHabilidadeOctaedro(int habilidade[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE]) {
+    int i, j;
+    int centro = TAMANHO_HABILIDADE / 2;  // Centro da matriz (índice 3)
+    
+    // Inicializa toda a matriz com 0
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            habilidade[i][j] = 0;
+        }
+    }
+    
+    // Cria o formato de losango (octaedro visto de frente) usando condicionais
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            // Calcula a distância Manhattan do centro
+            int distanciaLinha = (i > centro) ? (i - centro) : (centro - i);
+            int distanciaColuna = (j > centro) ? (j - centro) : (centro - j);
+            int distanciaTotal = distanciaLinha + distanciaColuna;
+            
+            // Se a soma das distâncias for menor ou igual ao raio, marca como afetado
+            if (distanciaTotal <= centro) {
+                habilidade[i][j] = 1;
+            }
+        }
+    }
+}
+
+/**
+ * Função para aplicar uma habilidade ao tabuleiro
+ * Sobrepõe a matriz de habilidade ao tabuleiro, marcando as áreas afetadas
+ * Parâmetros:
+ *   tabuleiro: matriz do jogo
+ *   habilidade: matriz de habilidade 7x7
+ *   linha_origem: linha do ponto de origem no tabuleiro
+ *   coluna_origem: coluna do ponto de origem no tabuleiro
+ */
+void aplicarHabilidade(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO],
+                       int habilidade[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE],
+                       int linha_origem, int coluna_origem) {
+    int i, j;
+    int offset = TAMANHO_HABILIDADE / 2;  // Offset para centralizar a habilidade
+    
+    // Percorre a matriz de habilidade
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            // Calcula a posição correspondente no tabuleiro
+            int linha_tab = linha_origem - offset + i;
+            int coluna_tab = coluna_origem - offset + j;
+            
+            // Verifica se a posição está dentro dos limites do tabuleiro
+            if (linha_tab >= 0 && linha_tab < TAMANHO_TABULEIRO &&
+                coluna_tab >= 0 && coluna_tab < TAMANHO_TABULEIRO) {
+                
+                // Se a habilidade afeta esta posição e não há navio, marca como afetada
+                if (habilidade[i][j] == 1 && tabuleiro[linha_tab][coluna_tab] != NAVIO) {
+                    tabuleiro[linha_tab][coluna_tab] = HABILIDADE;
+                }
+            }
+        }
+    }
+}
+
+/**
  * Função para exibir o tabuleiro no console
  * Parâmetros:
  *   tabuleiro: matriz do jogo
@@ -169,7 +304,28 @@ void exibirTabuleiro(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO]) {
         printf("\n");
     }
     
-    printf("\nLegenda: 0 = Agua | 3 = Navio\n\n");
+    printf("\nLegenda: 0 = Agua | 3 = Navio | 5 = Area de Habilidade\n\n");
+}
+
+/**
+ * Função para exibir uma matriz de habilidade (para visualização)
+ * Parâmetros:
+ *   habilidade: matriz de habilidade 7x7
+ *   nome: nome da habilidade
+ */
+void exibirHabilidade(int habilidade[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE], char* nome) {
+    int i, j;
+    
+    printf("\n=== HABILIDADE: %s ===\n\n", nome);
+    
+    for (i = 0; i < TAMANHO_HABILIDADE; i++) {
+        printf("  ");
+        for (j = 0; j < TAMANHO_HABILIDADE; j++) {
+            printf("%d  ", habilidade[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
 
 /**
@@ -183,38 +339,75 @@ int main() {
     int navio1[TAMANHO_NAVIO] = {NAVIO, NAVIO, NAVIO};  // Navio horizontal
     int navio2[TAMANHO_NAVIO] = {NAVIO, NAVIO, NAVIO};  // Navio vertical
     
-    // Coordenadas dos navios (podem ser modificadas)
-    int linha_navio1 = 2;    // Linha inicial do navio horizontal
-    int coluna_navio1 = 1;   // Coluna inicial do navio horizontal
-    int linha_navio2 = 5;    // Linha inicial do navio vertical
-    int coluna_navio2 = 7;   // Coluna inicial do navio vertical
+    // Declaração das matrizes de habilidade
+    int habilidadeCone[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE];
+    int habilidadeCruz[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE];
+    int habilidadeOctaedro[TAMANHO_HABILIDADE][TAMANHO_HABILIDADE];
     
-    printf("=== JOGO DE BATALHA NAVAL ===\n");
-    printf("Inicializando o tabuleiro...\n\n");
+    // Coordenadas dos navios
+    int linha_navio1 = 2;
+    int coluna_navio1 = 1;
+    int linha_navio2 = 7;
+    int coluna_navio2 = 7;
     
-    // Passo 1: Inicializar o tabuleiro com água
+    // Pontos de origem das habilidades no tabuleiro
+    int linha_cone = 3;
+    int coluna_cone = 5;
+    int linha_cruz = 6;
+    int coluna_cruz = 2;
+    int linha_octaedro = 5;
+    int coluna_octaedro = 8;
+    
+    printf("=== JOGO DE BATALHA NAVAL COM HABILIDADES ESPECIAIS ===\n\n");
+    
+    // ETAPA 1: Criar as matrizes de habilidade
+    printf("Criando matrizes de habilidade...\n");
+    criarHabilidadeCone(habilidadeCone);
+    criarHabilidadeCruz(habilidadeCruz);
+    criarHabilidadeOctaedro(habilidadeOctaedro);
+    printf("Matrizes de habilidade criadas com sucesso!\n\n");
+    
+    // Exibir as matrizes de habilidade
+    exibirHabilidade(habilidadeCone, "CONE");
+    exibirHabilidade(habilidadeCruz, "CRUZ");
+    exibirHabilidade(habilidadeOctaedro, "OCTAEDRO");
+    
+    // ETAPA 2: Inicializar o tabuleiro
+    printf("Inicializando o tabuleiro...\n");
     inicializarTabuleiro(tabuleiro);
     
-    // Passo 2: Posicionar o primeiro navio (horizontal)
-    printf("Posicionando navio 1 (horizontal)...\n");
+    // ETAPA 3: Posicionar os navios
+    printf("\nPosicionando navios...\n");
     if (!posicionarNavio(tabuleiro, navio1, linha_navio1, coluna_navio1, HORIZONTAL)) {
-        printf("Falha ao posicionar navio 1!\n");
-        return 1;  // Encerra o programa com erro
+        return 1;
     }
-    
-    // Passo 3: Posicionar o segundo navio (vertical)
-    printf("Posicionando navio 2 (vertical)...\n");
     if (!posicionarNavio(tabuleiro, navio2, linha_navio2, coluna_navio2, VERTICAL)) {
-        printf("Falha ao posicionar navio 2!\n");
-        return 1;  // Encerra o programa com erro
+        return 1;
     }
     
-    // Passo 4: Exibir o tabuleiro com os navios posicionados
+    // Exibir tabuleiro apenas com navios
+    printf("\n--- TABULEIRO COM NAVIOS ---");
     exibirTabuleiro(tabuleiro);
     
-    printf("Navios posicionados com sucesso!\n");
-    printf("Total de navios no tabuleiro: 2\n");
-    printf("Tamanho de cada navio: %d posicoes\n", TAMANHO_NAVIO);
+    // ETAPA 4: Aplicar habilidades ao tabuleiro
+    printf("Aplicando habilidades ao tabuleiro...\n\n");
     
-    return 0;  // Programa executado com sucesso
+    printf("Aplicando habilidade CONE na posicao (%d, %d)...\n", linha_cone, coluna_cone);
+    aplicarHabilidade(tabuleiro, habilidadeCone, linha_cone, coluna_cone);
+    
+    printf("Aplicando habilidade CRUZ na posicao (%d, %d)...\n", linha_cruz, coluna_cruz);
+    aplicarHabilidade(tabuleiro, habilidadeCruz, linha_cruz, coluna_cruz);
+    
+    printf("Aplicando habilidade OCTAEDRO na posicao (%d, %d)...\n", linha_octaedro, coluna_octaedro);
+    aplicarHabilidade(tabuleiro, habilidadeOctaedro, linha_octaedro, coluna_octaedro);
+    
+    // ETAPA 5: Exibir o tabuleiro final com navios e habilidades
+    printf("\n--- TABULEIRO FINAL COM NAVIOS E HABILIDADES ---");
+    exibirTabuleiro(tabuleiro);
+    
+    printf("Programa executado com sucesso!\n");
+    printf("Total de navios: 2\n");
+    printf("Total de habilidades aplicadas: 3 (Cone, Cruz, Octaedro)\n");
+    
+    return 0;
 }
